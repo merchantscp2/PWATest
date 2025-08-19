@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Push Notifications Demo</title>
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlBXQSBQdXNoIE5vdGlmaWNhdGlvbnMgRGVtbyIsCiAgInNob3J0X25hbWUiOiAiUHVzaERlbW8iLAogICJkZXNjcmlwdGlvbiI6ICJBIGRlbW8gYXBwIGZvciBQV0EgcHVzaCBub3RpZmljYXRpb25zIiwKICAic3RhcnRfdXJsIjogIi8iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmZmZmZmYiLAogICJ0aGVtZV9jb2xvciI6ICIjMDA3YWZmIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sO2Jhc2U2NCxQSE4yWnlCM2FXUjBhRDBpTVRrNUlpQm9aV2xuYUhROUlqRTVPU0lnZG1sbGQwSnZlRDBpTUNBd0lERTVPU0F4T1RraUlIaHRiRzV6UFNJB2RIZHZMM2QzTG1jdUxtOXlaeTh5TURBd0wzTjJaeUkrUEd4cGJtVmhjbGR5WVdScFpXNTBJR2xrUFNKM2RHWXRNVFEySWlCbmNtRmthV1Z1ZEZWdWFYUnpQU0oxYzJWeVUzQmhZMlZQYmxWelpTSStQSE4wYjNBZ2IyWm1jMlYwUFNJMUpTSWdjM1J2Y0MxamIyeHZjajBpSTJabU5qWXpOeUkrUEM5emRHOXdQanh6ZEc5d0lHOW1abk5sZEQwaU1qQWxJaUJ6ZEc5d0xXTnZiRzl5UFNJaU16QXpNekF5WlNJdlBqeHpkRzl3SUc5bVpuTmxkRDBpT0RBbElpQnpkRzl3TFdOdmJHOXlQU0lqTXprek16azRaaUkrUEM5emRHOXdQand2YkdsdVpXRnlSM0poWkdsbGJuUStQSFJsZUhRZ2VEMGlNVEF3SWlCNVBTSTJNQ0lnZEdWNGRDMWhibU5vYjNJOUltMXBaR1JzWlNJZ1ptbHNiRDBpSTJabVptWm1aaUlnWm05dWRDMXphWHBsUFNJeE1tQnlJR2x1YjI1c0lpQm1iMjUwTFhkbGFXZG9kRDBpTVRBd0lpQmtiMjFwYm1GdWRDMWlZWE5sYkdsdVpUMGlZMlZ1ZEdWeUlpQjBaWGgwTFdGdVkyaHZjajBpYzNSaGNuUWlQRlJGVkVoVVNTQWlQSFJsZUhSUVlYUm9JR2xrUFNJMU1qSWlJSFJsZUhROUlsUkZXRlJiUEN4VVpYaDBVR0YwYUQwV" />
+    <meta name="theme-color" content="#007aff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="PushDemo">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        .header {
+            margin-bottom: 40px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .subtitle {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .status {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+        
+        .status.pending {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid rgba(255, 193, 7, 0.4);
+        }
+        
+        .status.granted {
+            background: rgba(40, 167, 69, 0.2);
+            border: 1px solid rgba(40, 167, 69, 0.4);
+        }
+        
+        .status.denied {
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid rgba(220, 53, 69, 0.4);
+        }
+        
+        button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .install-prompt {
+            background: rgba(0, 122, 255, 0.2);
+            border: 1px solid rgba(0, 122, 255, 0.4);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .log {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: left;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9rem;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-radius: 5px;
+        }
+        
+        .log-entry.info {
+            color: #64b5f6;
+        }
+        
+        .log-entry.success {
+            color: #81c784;
+        }
+        
+        .log-entry.error {
+            color: #e57373;
+        }
+        
+        .emoji {
+            font-size: 1.5rem;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔔 Push Demo</h1>
+            <p class="subtitle">PWA Push Notifications Test</p>
+        </div>
+        
+        <div class="card">
+            <div id="httpsWarning" class="install-prompt" style="display: none; background: rgba(255, 152, 0, 0.2); border-color: rgba(255, 152, 0, 0.4);">
+                <span class="emoji">⚠️</span>
+                <strong>HTTPS Required:</strong> Full PWA features need HTTPS. For testing:
+                <br><br>
+                <strong>Option 1:</strong> Use a local server with HTTPS<br>
+                <strong>Option 2:</strong> Deploy to GitHub Pages, Netlify, or Vercel<br>
+                <strong>Option 3:</strong> Basic notifications still work (no push support)
+            </div>
+            
+            <div id="helpSection" class="install-prompt" style="display: none; background: rgba(33, 150, 243, 0.2); border-color: rgba(33, 150, 243, 0.4);">
+                <span class="emoji">💡</span>
+                <strong>Notifications Blocked?</strong> Here's how to fix it:
+                <br><br>
+                <strong>iPhone Safari:</strong> Settings → Safari → Websites → Notifications → Allow<br>
+                <strong>Desktop:</strong> Address bar 🔔 icon → Allow<br>
+                <strong>If no popup:</strong> Browser may have remembered a previous "Block" choice
+                <br><br>
+                <button id="helpBtn" style="background: rgba(33, 150, 243, 0.3); margin-top: 10px;">Try Again</button>
+            </div>
+            
+            <div id="installPrompt" class="install-prompt" style="display: none;">
+                <span class="emoji">📱</span>
+                <strong>Install App:</strong> Add this to your home screen to test push notifications!
+                <button id="installBtn">Install App</button>
+            </div>
+            
+            <div id="status" class="status pending">
+                <span class="emoji">⏳</span>
+                <span id="statusText">Checking notification support...</span>
+            </div>
+            
+            <button id="enableBtn" disabled>Enable Notifications</button>
+            <button id="testBtn" disabled>Send Test Notification</button>
+            <button id="subscribeBtn" disabled>Subscribe to Push</button>
+            
+            <div class="log" id="log">
+                <div class="log-entry info">App initialized. Checking capabilities...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // App state
+        let deferredPrompt;
+        let isSubscribed = false;
+        let swRegistration = null;
+
+        // DOM elements
+        const statusEl = document.getElementById('status');
+        const statusTextEl = document.getElementById('statusText');
+        const enableBtn = document.getElementById('enableBtn');
+        const testBtn = document.getElementById('testBtn');
+        const subscribeBtn = document.getElementById('subscribeBtn');
+        const installPrompt = document.getElementById('installPrompt');
+        const installBtn = document.getElementById('installBtn');
+        const httpsWarning = document.getElementById('httpsWarning');
+        const helpSection = document.getElementById('helpSection');
+        const helpBtn = document.getElementById('helpBtn');
+        const logEl = document.getElementById('log');
+
+        // Logging function
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        // Update status display
+        function updateStatus(text, type) {
+            statusTextEl.textContent = text;
+            statusEl.className = `status ${type}`;
+        }
+
+        // Check if browser supports notifications
+        function checkNotificationSupport() {
+            if (!('Notification' in window)) {
+                log('Notifications not supported', 'error');
+                updateStatus('Notifications not supported in this browser', 'denied');
+                return false;
+            }
+            
+            if (!('serviceWorker' in navigator)) {
+                log('Service Workers not supported', 'error');
+                updateStatus('Service Workers not supported', 'denied');
+                return false;
+            }
+
+            log('Notification and Service Worker support detected', 'success');
+            return true;
+        }
+
+        // Check if we're in a secure context
+        function isSecureContext() {
+            return window.isSecureContext || location.protocol === 'https:' || location.hostname === 'localhost';
+        }
+
+        // Register service worker
+        async function registerServiceWorker() {
+            if (!isSecureContext()) {
+                throw new Error('HTTPS required for Service Workers. Use localhost or deploy to HTTPS.');
+            }
+
+            try {
+                // Create service worker content as a blob
+                const swContent = `
+                    self.addEventListener('push', function(event) {
+                        console.log('Push received:', event);
+                        
+                        const options = {
+                            body: event.data ? event.data.text() : 'Default notification body',
+                            icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTk5IiBoZWlnaHQ9IjE5OSIgdmlld0JveD0iMCAwIDE5OSAxOTkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGxpbmVhckdyYWRpZW50IGlkPSJ3dGYtMTQ2IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSI1JSIgc3RvcC1jb2xvcj0iI2ZmNjYzNyIvPjxzdG9wIG9mZnNldD0iMjAlIiBzdG9wLWNvbG9yPSIjMzAzMzAyZSIvPjxzdG9wIG9mZnNldD0iODAlIiBzdG9wLWNvbG9yPSIjMzkzOTM5ZiIvPjwvbGluZWFyR3JhZGllbnQ+PHRleHQgeD0iMTAwIiB5PSI2MCI+PC90ZXh0Pjx0ZXh0UGF0aCBpZD0iNTIyIiB0ZXh0PSJURVhUQSI+',
+                            badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTk5IiBoZWlnaHQ9IjE5OSIgdmlld0JveD0iMCAwIDE5OSAxOTkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjE5OSIgaGVpZ2h0PSIxOTkiIGZpbGw9IiMwMDdhZmYiLz48L3N2Zz4=',
+                            vibrate: [200, 100, 200],
+                            tag: 'pwa-demo',
+                            requireInteraction: true
+                        };
+
+                        event.waitUntil(
+                            self.registration.showNotification('PWA Push Demo', options)
+                        );
+                    });
+
+                    self.addEventListener('notificationclick', function(event) {
+                        console.log('Notification clicked:', event);
+                        event.notification.close();
+
+                        event.waitUntil(
+                            clients.openWindow('/')
+                        );
+                    });
+                `;
+
+                const swBlob = new Blob([swContent], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(swBlob);
+                
+                swRegistration = await navigator.serviceWorker.register(swUrl);
+                log('Service Worker registered successfully', 'success');
+                
+                return swRegistration;
+            } catch (error) {
+                log(`Service Worker registration failed: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        // Initialize the app
+        async function initializeApp() {
+            if (!checkNotificationSupport()) {
+                return;
+            }
+
+            // Check if we're in a secure context
+            if (!isSecureContext()) {
+                log('⚠️ HTTPS required for full PWA functionality', 'error');
+                log('Current protocol: ' + location.protocol, 'info');
+                updateStatus('HTTPS required for Service Workers', 'denied');
+                httpsWarning.style.display = 'block';
+                
+                // Enable basic notification testing without service workers
+                if ('Notification' in window) {
+                    log('Enabling basic notification mode (no push support)', 'info');
+                    
+                    const permission = checkNotificationStatus();
+                    if (permission === 'denied') {
+                        enableBtn.textContent = 'Notifications Blocked - Check Settings';
+                        helpSection.style.display = 'block';
+                        log('💡 Safari: Settings → Websites → Notifications → Allow this site', 'info');
+                    } else if (permission === 'granted') {
+                        enableBtn.textContent = 'Notifications Enabled';
+                        enableBtn.disabled = true;
+                        testBtn.disabled = false;
+                    } else {
+                        enableBtn.textContent = 'Enable Basic Notifications';
+                    }
+                    
+                    enableBtn.disabled = false;
+                    testBtn.disabled = permission !== 'granted';
+                    subscribeBtn.textContent = 'Push Requires HTTPS';
+                    subscribeBtn.disabled = true;
+                }
+                return;
+            }
+
+            try {
+                await registerServiceWorker();
+                
+                // Check current notification permission
+                const permission = checkNotificationStatus();
+                
+                if (permission === 'granted') {
+                    updateStatus('Notifications enabled ✅', 'granted');
+                    enableBtn.textContent = 'Notifications Enabled';
+                    enableBtn.disabled = true;
+                    testBtn.disabled = false;
+                    subscribeBtn.disabled = false;
+                } else if (permission === 'denied') {
+                    updateStatus('Notifications blocked ❌', 'denied');
+                    enableBtn.textContent = 'Notifications Blocked - Check Settings';
+                    enableBtn.disabled = false; // Allow retry
+                    helpSection.style.display = 'block';
+                    log('💡 To fix: Safari Settings → Websites → Notifications → Allow', 'info');
+                } else {
+                    updateStatus('Click to enable notifications', 'pending');
+                    enableBtn.textContent = 'Enable Notifications';
+                    enableBtn.disabled = false;
+                    log('👆 Click "Enable Notifications" to request permission', 'info');
+                }
+                
+            } catch (error) {
+                log(`Initialization failed: ${error.message}`, 'error');
+                updateStatus('Initialization failed', 'denied');
+                
+                // Fallback to basic notifications if available
+                if ('Notification' in window) {
+                    log('Falling back to basic notification mode', 'info');
+                    
+                    const permission = checkNotificationStatus();
+                    if (permission === 'denied') {
+                        enableBtn.textContent = 'Notifications Blocked - Check Settings';
+                        helpSection.style.display = 'block';
+                        log('💡 Safari: Settings → Websites → Notifications → Allow this site', 'info');
+                    } else {
+                        enableBtn.textContent = 'Enable Basic Notifications';
+                    }
+                    
+                    enableBtn.disabled = false;
+                    testBtn.disabled = false;
+                    subscribeBtn.textContent = 'Service Worker Required';
+                    subscribeBtn.disabled = true;
+                }
+            }
+        }
+
+        // Check notification permission status and browser settings
+        function checkNotificationStatus() {
+            const permission = Notification.permission;
+            log(`Notification permission: ${permission}`);
+            
+            // Check if notifications might be disabled at browser level
+            if (permission === 'denied') {
+                log('❌ Notifications denied - check browser settings', 'error');
+                return 'denied';
+            } else if (permission === 'granted') {
+                log('✅ Notifications already granted', 'success');
+                return 'granted';
+            } else {
+                log('⏳ Notifications not yet requested', 'info');
+                return 'default';
+            }
+        }
+
+        // Request notification permission
+        async function requestNotificationPermission() {
+            try {
+                log('🔔 Requesting notification permission...', 'info');
+                
+                // Check if Notification.requestPermission exists
+                if (!Notification.requestPermission) {
+                    log('❌ Notification.requestPermission not available', 'error');
+                    updateStatus('Notifications not supported', 'denied');
+                    return;
+                }
+
+                // Request permission
+                let permission;
+                
+                // Handle both callback and promise versions
+                if (typeof Notification.requestPermission === 'function') {
+                    const result = Notification.requestPermission();
+                    if (result && result.then) {
+                        // Promise version
+                        permission = await result;
+                    } else {
+                        // Callback version or immediate return
+                        permission = result;
+                    }
+                }
+                
+                log(`Permission request result: ${permission}`, permission === 'granted' ? 'success' : 'error');
+                
+                if (permission === 'granted') {
+                    updateStatus('Notifications enabled ✅', 'granted');
+                    enableBtn.textContent = 'Notifications Enabled';
+                    enableBtn.disabled = true;
+                    testBtn.disabled = false;
+                    if (swRegistration) {
+                        subscribeBtn.disabled = false;
+                    }
+                    log('🎉 You can now receive notifications!', 'success');
+                } else if (permission === 'denied') {
+                    updateStatus('Notifications blocked ❌', 'denied');
+                    log('❌ Notification permission denied', 'error');
+                    log('💡 To enable: Browser settings → Notifications → Allow', 'info');
+                    helpSection.style.display = 'block';
+                } else {
+                    updateStatus('Permission request cancelled', 'pending');
+                    log('⚠️ Permission request was cancelled', 'info');
+                    helpSection.style.display = 'block';
+                }
+            } catch (error) {
+                log(`❌ Permission request failed: ${error.message}`, 'error');
+                updateStatus('Permission request failed', 'denied');
+            }
+        }
+
+        // Send test notification
+        function sendTestNotification() {
+            if (Notification.permission === 'granted') {
+                const notification = new Notification('Test Notification', {
+                    body: 'This is a test notification from your PWA!',
+                    icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTk5IiBoZWlnaHQ9IjE5OSIgdmlld0JveD0iMCAwIDE5OSAxOTkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGxpbmVhckdyYWRpZW50IGlkPSJ3dGYtMTQ2IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSI1JSIgc3RvcC1jb2xvcj0iI2ZmNjYzNyIvPjxzdG9wIG9mZnNldD0iMjAlIiBzdG9wLWNvbG9yPSIjMzAzMzAyZSIvPjxzdG9wIG9mZnNldD0iODAlIiBzdG9wLWNvbG9yPSIjMzkzOTM5ZiIvPjwvbGluZWFyR3JhZGllbnQ+PHRleHQgeD0iMTAwIiB5PSI2MCI+PC90ZXh0Pjx0ZXh0UGF0aCBpZD0iNTIyIiB0ZXh0PSJURVhUQSI+',
+                    vibrate: [200, 100, 200],
+                    tag: 'test-notification'
+                });
+
+                notification.onclick = function() {
+                    log('Test notification clicked!', 'info');
+                    notification.close();
+                };
+
+                log('Test notification sent!', 'success');
+            } else {
+                log('Cannot send notification - permission not granted', 'error');
+            }
+        }
+
+        // Mock push subscription (in real app, this would subscribe to a push service)
+        async function subscribeToPush() {
+            try {
+                log('Simulating push subscription...', 'info');
+                
+                // In a real app, you would do:
+                // const subscription = await swRegistration.pushManager.subscribe({
+                //     userVisibleOnly: true,
+                //     applicationServerKey: urlBase64ToUint8Array('YOUR_VAPID_PUBLIC_KEY')
+                // });
+                
+                // For demo purposes, we'll simulate this
+                setTimeout(() => {
+                    log('Push subscription successful! (simulated)', 'success');
+                    subscribeBtn.textContent = 'Subscribed to Push';
+                    subscribeBtn.disabled = true;
+                    isSubscribed = true;
+                }, 1000);
+                
+            } catch (error) {
+                log(`Push subscription failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Handle app installation
+        function handleInstall() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        log('App installed successfully!', 'success');
+                    } else {
+                        log('App installation declined', 'info');
+                    }
+                    deferredPrompt = null;
+                    installPrompt.style.display = 'none';
+                });
+            }
+        }
+
+        // Event listeners
+        enableBtn.addEventListener('click', requestNotificationPermission);
+        testBtn.addEventListener('click', sendTestNotification);
+        subscribeBtn.addEventListener('click', subscribeToPush);
+        installBtn.addEventListener('click', handleInstall);
+        helpBtn.addEventListener('click', () => {
+            helpSection.style.display = 'none';
+            requestNotificationPermission();
+        });
+
+        // Listen for install prompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installPrompt.style.display = 'block';
+            log('Install prompt available', 'info');
+        });
+
+        // Check if app is already installed
+        window.addEventListener('appinstalled', () => {
+            log('App installed!', 'success');
+            installPrompt.style.display = 'none';
+            deferredPrompt = null;
+        });
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+</body>
+</html>
