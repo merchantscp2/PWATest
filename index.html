@@ -187,11 +187,13 @@
             <button id="enableBtn" disabled>Enable Notifications</button>
             <button id="testBtn" disabled>Send Test Notification</button>
             <button id="actionTestBtn" disabled>Send Notification with Actions</button>
+            <button id="swTestBtn" disabled>Test Service Worker Message</button>
             <button id="subscribeBtn" disabled>Subscribe to Push</button>
             
             <div class="log" id="log">
                 <div class="log-entry info">App initialized. Checking capabilities...</div>
                 <div class="log-entry info">🎯 New: Test notifications with action buttons!</div>
+                <div class="log-entry info">📁 Requires: service-worker.js file in root directory</div>
             </div>
         </div>
     </div>
@@ -208,6 +210,7 @@
         const enableBtn = document.getElementById('enableBtn');
         const testBtn = document.getElementById('testBtn');
         const actionTestBtn = document.getElementById('actionTestBtn');
+        const swTestBtn = document.getElementById('swTestBtn');
         const subscribeBtn = document.getElementById('subscribeBtn');
         const installPrompt = document.getElementById('installPrompt');
         const installBtn = document.getElementById('installBtn');
@@ -261,81 +264,19 @@
             }
 
             try {
-                // Create service worker content as a blob
-                const swContent = `
-                    self.addEventListener('push', function(event) {
-                        console.log('Push received:', event);
-                        
-                        const options = {
-                            body: event.data ? event.data.text() : 'Default notification body',
-                            icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTk5IiBoZWlnaHQ9IjE5OSIgdmlld0JveD0iMCAwIDE5OSAxOTkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGxpbmVhckdyYWRpZW50IGlkPSJ3dGYtMTQ2IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSI1JSIgc3RvcC1jb2xvcj0iI2ZmNjYzNyIvPjxzdG9wIG9mZnNldD0iMjAlIiBzdG9wLWNvbG9yPSIjMzAzMzAyZSIvPjxzdG9wIG9mZnNldD0iODAlIiBzdG9wLWNvbG9yPSIjMzkzOTM5ZiIvPjwvbGluZWFyR3JhZGllbnQ+PHRleHQgeD0iMTAwIiB5PSI2MCI+PC90ZXh0Pjx0ZXh0UGF0aCBpZD0iNTIyIiB0ZXh0PSJURVhUQSI+',
-                            badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTk5IiBoZWlnaHQ9IjE5OSIgdmlld0JveD0iMCAwIDE5OSAxOTkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjE5OSIgaGVpZ2h0PSIxOTkiIGZpbGw9IiMwMDdhZmYiLz48L3N2Zz4=',
-                            vibrate: [200, 100, 200],
-                            tag: 'pwa-demo',
-                            requireInteraction: true
-                        };
-
-                        event.waitUntil(
-                            self.registration.showNotification('PWA Push Demo', options)
-                        );
-                    });
-
-                    self.addEventListener('notificationclick', function(event) {
-                        console.log('Notification clicked:', event);
-                        
-                        // Handle action clicks
-                        if (event.action) {
-                            console.log('Action clicked:', event.action);
-                            
-                            switch (event.action) {
-                                case 'like':
-                                    console.log('User liked the notification');
-                                    // Send like action to server
-                                    break;
-                                case 'reply':
-                                    console.log('User wants to reply');
-                                    // Open reply interface
-                                    break;
-                                case 'dismiss':
-                                    console.log('User dismissed notification');
-                                    // Just close, no action needed
-                                    break;
-                                case 'view':
-                                    console.log('User wants to view details');
-                                    // Open specific page
-                                    event.waitUntil(
-                                        clients.openWindow('/?action=view&id=123')
-                                    );
-                                    break;
-                                default:
-                                    console.log('Unknown action:', event.action);
-                            }
-                        } else {
-                            // Default click - open the app
-                            console.log('Notification body clicked');
-                            event.waitUntil(
-                                clients.openWindow('/')
-                            );
-                        }
-                        
-                        event.notification.close();
-                    });
-
-                    self.addEventListener('notificationclose', function(event) {
-                        console.log('Notification was closed:', event);
-                        // Track notification dismissal
-                    });
-                `;
-
-                const swBlob = new Blob([swContent], { type: 'application/javascript' });
-                const swUrl = URL.createObjectURL(swBlob);
+                // Register the separate service worker file
+                swRegistration = await navigator.serviceWorker.register('./service-worker.js');
+                log('✅ Service Worker registered successfully!', 'success');
+                log(`SW scope: ${swRegistration.scope}`, 'info');
                 
-                swRegistration = await navigator.serviceWorker.register(swUrl);
-                log('Service Worker registered successfully', 'success');
+                // Wait for service worker to be ready
+                await navigator.serviceWorker.ready;
+                log('🚀 Service Worker is ready!', 'success');
                 
                 return swRegistration;
             } catch (error) {
-                log(`Service Worker registration failed: ${error.message}`, 'error');
+                log(`❌ Service Worker registration failed: ${error.message}`, 'error');
+                log(`💡 Make sure 'service-worker.js' file exists in your root directory`, 'info');
                 throw error;
             }
         }
@@ -367,6 +308,7 @@
                         enableBtn.disabled = true;
                         testBtn.disabled = false;
                         actionTestBtn.disabled = false;
+                        swTestBtn.disabled = true; // No service worker in HTTPS mode
                     } else {
                         enableBtn.textContent = 'Enable Basic Notifications';
                     }
@@ -374,6 +316,7 @@
                     enableBtn.disabled = false;
                     testBtn.disabled = permission !== 'granted';
                     actionTestBtn.disabled = permission !== 'granted';
+                    swTestBtn.disabled = true; // No service worker without HTTPS
                     subscribeBtn.textContent = 'Push Requires HTTPS';
                     subscribeBtn.disabled = true;
                 }
@@ -392,6 +335,7 @@
                     enableBtn.disabled = true;
                     testBtn.disabled = false;
                     actionTestBtn.disabled = false;
+                    swTestBtn.disabled = false;
                     subscribeBtn.disabled = false;
                 } else if (permission === 'denied') {
                     updateStatus('Notifications blocked ❌', 'denied');
@@ -424,6 +368,7 @@
                         enableBtn.disabled = true;
                         testBtn.disabled = false;
                         actionTestBtn.disabled = false;
+                        swTestBtn.disabled = true; // Service worker failed
                     } else {
                         enableBtn.textContent = 'Enable Basic Notifications';
                     }
@@ -431,6 +376,7 @@
                     enableBtn.disabled = false;
                     testBtn.disabled = permission !== 'granted';
                     actionTestBtn.disabled = permission !== 'granted';
+                    swTestBtn.disabled = true; // Service worker not available
                     subscribeBtn.textContent = 'Service Worker Required';
                     subscribeBtn.disabled = true;
                 }
@@ -490,6 +436,7 @@
                     enableBtn.disabled = true;
                     testBtn.disabled = false;
                     actionTestBtn.disabled = false;
+                    swTestBtn.disabled = false;
                     if (swRegistration) {
                         subscribeBtn.disabled = false;
                     }
@@ -507,6 +454,20 @@
             } catch (error) {
                 log(`❌ Permission request failed: ${error.message}`, 'error');
                 updateStatus('Permission request failed', 'denied');
+            }
+        }
+
+        // Send message to service worker for test notification
+        function sendServiceWorkerNotification() {
+            if (swRegistration && swRegistration.active) {
+                // Send message to service worker to trigger notification
+                swRegistration.active.postMessage({
+                    type: 'SEND_TEST_NOTIFICATION',
+                    icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTk5IiBoZWlnaHQ9IjE5OSIgdmlld0JveD0iMCAwIDE5OSAxOTkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGxpbmVhckdyYWRpZW50IGlkPSJ3dGYtMTQ2IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSI1JSIgc3RvcC1jb2xvcj0iI2ZmNjYzNyIvPjxzdG9wIG9mZnNldD0iMjAlIiBzdG9wLWNvbG9yPSIjMzAzMzAyZSIvPjxzdG9wIG9mZnNldD0iODAlIiBzdG9wLWNvbG9yPSIjMzkzOTM5ZiIvPjwvbGluZWFyR3JhZGllbnQ+PHRleHQgeD0iMTAwIiB5PSI2MCI+PC90ZXh0Pjx0ZXh0UGF0aCBpZD0iNTIyIiB0ZXh0PSJURVhUQSI+'
+                });
+                log('📨 Message sent to Service Worker', 'success');
+            } else {
+                log('❌ Service Worker not active', 'error');
             }
         }
 
@@ -541,7 +502,8 @@
                         ],
                         data: {
                             timestamp: Date.now(),
-                            type: 'action-demo'
+                            type: 'action-demo',
+                            id: 'demo-' + Math.random().toString(36).substr(2, 9)
                         }
                     };
 
@@ -633,6 +595,7 @@
         enableBtn.addEventListener('click', requestNotificationPermission);
         testBtn.addEventListener('click', sendTestNotification);
         actionTestBtn.addEventListener('click', sendActionNotification);
+        swTestBtn.addEventListener('click', sendServiceWorkerNotification);
         subscribeBtn.addEventListener('click', subscribeToPush);
         installBtn.addEventListener('click', handleInstall);
         helpBtn.addEventListener('click', () => {
