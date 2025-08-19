@@ -186,10 +186,12 @@
             
             <button id="enableBtn" disabled>Enable Notifications</button>
             <button id="testBtn" disabled>Send Test Notification</button>
+            <button id="actionTestBtn" disabled>Send Notification with Actions</button>
             <button id="subscribeBtn" disabled>Subscribe to Push</button>
             
             <div class="log" id="log">
                 <div class="log-entry info">App initialized. Checking capabilities...</div>
+                <div class="log-entry info">🎯 New: Test notifications with action buttons!</div>
             </div>
         </div>
     </div>
@@ -205,6 +207,7 @@
         const statusTextEl = document.getElementById('statusText');
         const enableBtn = document.getElementById('enableBtn');
         const testBtn = document.getElementById('testBtn');
+        const actionTestBtn = document.getElementById('actionTestBtn');
         const subscribeBtn = document.getElementById('subscribeBtn');
         const installPrompt = document.getElementById('installPrompt');
         const installBtn = document.getElementById('installBtn');
@@ -279,11 +282,48 @@
 
                     self.addEventListener('notificationclick', function(event) {
                         console.log('Notification clicked:', event);
+                        
+                        // Handle action clicks
+                        if (event.action) {
+                            console.log('Action clicked:', event.action);
+                            
+                            switch (event.action) {
+                                case 'like':
+                                    console.log('User liked the notification');
+                                    // Send like action to server
+                                    break;
+                                case 'reply':
+                                    console.log('User wants to reply');
+                                    // Open reply interface
+                                    break;
+                                case 'dismiss':
+                                    console.log('User dismissed notification');
+                                    // Just close, no action needed
+                                    break;
+                                case 'view':
+                                    console.log('User wants to view details');
+                                    // Open specific page
+                                    event.waitUntil(
+                                        clients.openWindow('/?action=view&id=123')
+                                    );
+                                    break;
+                                default:
+                                    console.log('Unknown action:', event.action);
+                            }
+                        } else {
+                            // Default click - open the app
+                            console.log('Notification body clicked');
+                            event.waitUntil(
+                                clients.openWindow('/')
+                            );
+                        }
+                        
                         event.notification.close();
+                    });
 
-                        event.waitUntil(
-                            clients.openWindow('/')
-                        );
+                    self.addEventListener('notificationclose', function(event) {
+                        console.log('Notification was closed:', event);
+                        // Track notification dismissal
                     });
                 `;
 
@@ -326,12 +366,14 @@
                         enableBtn.textContent = 'Notifications Enabled';
                         enableBtn.disabled = true;
                         testBtn.disabled = false;
+                        actionTestBtn.disabled = false;
                     } else {
                         enableBtn.textContent = 'Enable Basic Notifications';
                     }
                     
                     enableBtn.disabled = false;
                     testBtn.disabled = permission !== 'granted';
+                    actionTestBtn.disabled = permission !== 'granted';
                     subscribeBtn.textContent = 'Push Requires HTTPS';
                     subscribeBtn.disabled = true;
                 }
@@ -349,6 +391,7 @@
                     enableBtn.textContent = 'Notifications Enabled';
                     enableBtn.disabled = true;
                     testBtn.disabled = false;
+                    actionTestBtn.disabled = false;
                     subscribeBtn.disabled = false;
                 } else if (permission === 'denied') {
                     updateStatus('Notifications blocked ❌', 'denied');
@@ -376,12 +419,18 @@
                         enableBtn.textContent = 'Notifications Blocked - Check Settings';
                         helpSection.style.display = 'block';
                         log('💡 Safari: Settings → Websites → Notifications → Allow this site', 'info');
+                    } else if (permission === 'granted') {
+                        enableBtn.textContent = 'Notifications Enabled';
+                        enableBtn.disabled = true;
+                        testBtn.disabled = false;
+                        actionTestBtn.disabled = false;
                     } else {
                         enableBtn.textContent = 'Enable Basic Notifications';
                     }
                     
                     enableBtn.disabled = false;
-                    testBtn.disabled = false;
+                    testBtn.disabled = permission !== 'granted';
+                    actionTestBtn.disabled = permission !== 'granted';
                     subscribeBtn.textContent = 'Service Worker Required';
                     subscribeBtn.disabled = true;
                 }
@@ -440,6 +489,7 @@
                     enableBtn.textContent = 'Notifications Enabled';
                     enableBtn.disabled = true;
                     testBtn.disabled = false;
+                    actionTestBtn.disabled = false;
                     if (swRegistration) {
                         subscribeBtn.disabled = false;
                     }
@@ -457,6 +507,64 @@
             } catch (error) {
                 log(`❌ Permission request failed: ${error.message}`, 'error');
                 updateStatus('Permission request failed', 'denied');
+            }
+        }
+
+        // Send test notification with actions
+        function sendActionNotification() {
+            if (Notification.permission === 'granted') {
+                // Use service worker for action notifications if available
+                if (swRegistration) {
+                    const options = {
+                        body: 'This notification has action buttons! Try clicking them.',
+                        icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTk5IiBoZWlnaHQ9IjE5OSIgdmlld0JveD0iMCAwIDE5OSAxOTkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGxpbmVhckdyYWRpZW50IGlkPSJ3dGYtMTQ2IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSI1JSIgc3RvcC1jb2xvcj0iI2ZmNjYzNyIvPjxzdG9wIG9mZnNldD0iMjAlIiBzdG9wLWNvbG9yPSIjMzAzMzAyZSIvPjxzdG9wIG9mZnNldD0iODAlIiBzdG9wLWNvbG9yPSIjMzkzOTM5ZiIvPjwvbGluZWFyR3JhZGllbnQ+PHRleHQgeD0iMTAwIiB5PSI2MCI+PC90ZXh0Pjx0ZXh0UGF0aCBpZD0iNTIyIiB0ZXh0PSJURVhUQSI+',
+                        badge: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTk5IiBoZWlnaHQ9IjE5OSIgdmlld0JveD0iMCAwIDE5OSAxOTkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjE5OSIgaGVpZ2h0PSIxOTkiIGZpbGw9IiMwMDdhZmYiLz48L3N2Zz4=',
+                        vibrate: [200, 100, 200],
+                        tag: 'action-demo',
+                        requireInteraction: true,
+                        actions: [
+                            {
+                                action: 'like',
+                                title: '👍 Like',
+                                icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTcgMTBWMTJWMjJIMTdMMjAgMTdWMTBIMTNMMTQgNlY0QzE0IDMuNDQ3NzIgMTMuNTUyMyAzIDEzIDNIMTFDMTAuNDQ3NyAzIDEwIDMuNDQ3NzIgMTAgNFY2TDkgMTBIN1oiIGZpbGw9IiMzNEE4NTMiLz4KPC9zdmc+'
+                            },
+                            {
+                                action: 'view',
+                                title: '👁️ View Details',
+                                icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDRDNyA0IDIuNzMgNy4xMSAxIDEyQzIuNzMgMTYuODkgNyAyMCAxMiAyMEMxNyAyMCAyMS4yNyAxNi44OSAyMyAxMkMyMS4yNyA3LjExIDE3IDQgMTIgNFpNMTIgMTdDOS4yNCAxNyA3IDE0Ljc2IDcgMTJDNyA5LjI0IDkuMjQgNyAxMiA3QzE0Ljc2IDcgMTcgOS4yNCAxNyAxMkMxNyAxNC43NiAxNC43NiAxNyAxMiAxN1pNMTIgOUM5Ljc5IDkgOCAxMC43OSA4IDEyQzggMTMuMjEgOS43OSAxNSAxMiAxNUMxNC4yMSAxNSAxNiAxMy4yMSAxNiAxMkMxNiAxMC43OSAxNC4yMSA5IDEyIDlaIiBmaWxsPSIjMTU3NkYzIi8+Cjwvc3ZnPg=='
+                            },
+                            {
+                                action: 'dismiss',
+                                title: '❌ Dismiss',
+                                icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE4IDZMMTggMThMNiAxOEw2IDZMMTggNloiIGZpbGw9IiNFQTQ2MzMiLz4KPC9zdmc+'
+                            }
+                        ],
+                        data: {
+                            timestamp: Date.now(),
+                            type: 'action-demo'
+                        }
+                    };
+
+                    swRegistration.showNotification('Action Notification Demo', options);
+                    log('📱 Action notification sent via Service Worker!', 'success');
+                } else {
+                    // Fallback for basic notifications (actions won't work without service worker)
+                    const notification = new Notification('Action Demo (Limited)', {
+                        body: 'Service Worker needed for action buttons. This is a basic notification.',
+                        icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTk5IiBoZWlnaHQ9IjE5OSIgdmlld0JveD0iMCAwIDE5OSAxOTkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGxpbmVhckdyYWRpZW50IGlkPSJ3dGYtMTQ2IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agb2Zmc2V0PSI1JSIgc3RvcC1jb2xvcj0iI2ZmNjYzNyIvPjxzdG9wIG9mZnNldD0iMjAlIiBzdG9wLWNvbG9yPSIjMzAzMzAyZSIvPjxzdG9wIG9mZnNldD0iODAlIiBzdG9wLWNvbG9yPSIjMzkzOTM5ZiIvPjwvbGluZWFyR3JhZGllbnQ+PHRleHQgeD0iMTAwIiB5PSI2MCI+PC90ZXh0Pjx0ZXh0UGF0aCBpZD0iNTIyIiB0ZXh0PSJURVhUQSI+',
+                        vibrate: [200, 100, 200],
+                        tag: 'action-demo-basic'
+                    });
+
+                    notification.onclick = function() {
+                        log('Basic notification clicked!', 'info');
+                        notification.close();
+                    };
+
+                    log('📱 Basic notification sent (no actions available)', 'info');
+                }
+            } else {
+                log('Cannot send notification - permission not granted', 'error');
             }
         }
 
@@ -524,6 +632,7 @@
         // Event listeners
         enableBtn.addEventListener('click', requestNotificationPermission);
         testBtn.addEventListener('click', sendTestNotification);
+        actionTestBtn.addEventListener('click', sendActionNotification);
         subscribeBtn.addEventListener('click', subscribeToPush);
         installBtn.addEventListener('click', handleInstall);
         helpBtn.addEventListener('click', () => {
